@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Memory Archive Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #faf8f5;
+    --surface: #ffffff;
+    --surface2: #f3f0eb;
+    --border: #e8e3dc;
+    --border2: #d4cec5;
+    --text: #2a2420;
+    --text2: #6b6259;
+    --text3: #9e9389;
+    --accent: #8b5e3c;
+    --accent-light: #f5ede5;
+    --accent2: #5c7a4e;
+    --accent2-light: #eaf2e5;
+    --accent3: #4a6880;
+    --accent3-light: #e5eef5;
+    --danger: #c0392b;
+    --danger-light: #fdf0ef;
+    --gold: #b8922e;
+    --gold-light: #fdf6e3;
+    --pink: #a05070;
+    --pink-light: #faeef4;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── LOGIN ── */
+  #loginScreen {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; flex-direction: column; gap: 2rem;
+  }
+  #loginScreen h1 { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--text); }
+  #loginScreen p { color: var(--text2); font-size: 0.9rem; }
+  .login-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 2rem; width: 320px;
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .login-box input {
+    width: 100%; padding: 0.65rem 0.9rem; border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); font-family: inherit; font-size: 0.9rem;
+    background: var(--bg); color: var(--text); outline: none;
+  }
+  .login-box input:focus { border-color: var(--accent); }
+  .btn-primary {
+    padding: 0.65rem 1.2rem; background: var(--accent); color: #fff;
+    border: none; border-radius: var(--radius-sm); font-family: inherit;
+    font-size: 0.9rem; cursor: pointer; font-weight: 500;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .error-msg { color: var(--danger); font-size: 0.8rem; display: none; }
+
+  /* ── APP SHELL ── */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 2rem; display: flex; align-items: center; gap: 1rem;
+    height: 60px; position: sticky; top: 0; z-index: 100;
+  }
+  header .logo {
+    font-family: 'Playfair Display', serif; font-size: 1.2rem;
+    color: var(--accent); font-style: italic; margin-right: auto;
+  }
+  .btn-logout {
+    padding: 0.4rem 0.9rem; background: none; border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); font-family: inherit; font-size: 0.8rem;
+    color: var(--text2); cursor: pointer;
+  }
+  .btn-logout:hover { background: var(--surface2); }
+
+  /* ── NAV ── */
+  nav {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; gap: 0; padding: 0 2rem; overflow-x: auto;
+  }
+  nav button {
+    padding: 0.85rem 1.2rem; background: none; border: none;
+    border-bottom: 2px solid transparent; font-family: inherit;
+    font-size: 0.88rem; color: var(--text2); cursor: pointer;
+    white-space: nowrap; transition: all 0.15s;
+  }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+  nav button:hover:not(.active) { color: var(--text); background: var(--bg); }
+
+  /* ── MAIN ── */
+  main { flex: 1; padding: 2rem; max-width: 1100px; margin: 0 auto; width: 100%; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── HOME ── */
+  .hero {
+    text-align: center; padding: 2.5rem 1rem 2rem;
+    border-bottom: 1px solid var(--border); margin-bottom: 2rem;
+  }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--text); margin-bottom: 0.5rem; }
+  .hero p { color: var(--text2); font-size: 0.95rem; font-style: italic; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem 1.5rem;
+  }
+  .stat-card .num { font-size: 2rem; font-weight: 500; color: var(--accent); }
+  .stat-card .lbl { font-size: 0.8rem; color: var(--text2); margin-top: 0.25rem; }
+  .category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; }
+  .cat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 1rem 1.25rem;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .cat-card .cat-name { font-size: 0.9rem; font-weight: 500; }
+  .cat-card .cat-count { font-size: 0.8rem; color: var(--text3); }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 1rem; color: var(--text); }
+  .quotes-wrap { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
+  .quote-card {
+    background: var(--accent-light); border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 0.85rem 1.1rem; font-style: italic; color: var(--text2); font-size: 0.9rem;
+  }
+  .quote-card span { display: block; margin-top: 0.3rem; font-style: normal; font-size: 0.78rem; color: var(--text3); }
+
+  /* ── FORM PANEL ── */
+  .form-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem;
+  }
+  .form-panel h3 { font-size: 1rem; font-weight: 500; margin-bottom: 1.25rem; color: var(--text); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+  .form-grid.full { grid-template-columns: 1fr; }
+  .field { display: flex; flex-direction: column; gap: 0.35rem; }
+  .field label { font-size: 0.78rem; color: var(--text2); font-weight: 500; }
+  .field input, .field select, .field textarea {
+    padding: 0.6rem 0.85rem; border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); font-family: inherit; font-size: 0.88rem;
+    background: var(--bg); color: var(--text); outline: none; resize: vertical;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+  .form-actions { display: flex; gap: 0.75rem; margin-top: 1rem; }
+  .btn-save {
+    padding: 0.6rem 1.4rem; background: var(--accent); color: #fff;
+    border: none; border-radius: var(--radius-sm); font-family: inherit;
+    font-size: 0.88rem; cursor: pointer; font-weight: 500;
+  }
+  .btn-save:hover { opacity: 0.88; }
+  .btn-cancel {
+    padding: 0.6rem 1.1rem; background: none; border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); font-family: inherit; font-size: 0.88rem;
+    color: var(--text2); cursor: pointer;
+  }
+  .btn-cancel:hover { background: var(--surface2); }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center;
+  }
+  .filter-bar select, .filter-bar input {
+    padding: 0.45rem 0.75rem; border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); font-family: inherit; font-size: 0.83rem;
+    background: var(--surface); color: var(--text); outline: none;
+  }
+  .filter-bar select:focus, .filter-bar input:focus { border-color: var(--accent); }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 0.83rem;
+    background: var(--surface); border-radius: var(--radius); overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  thead th {
+    background: var(--surface2); padding: 0.75rem 0.85rem;
+    text-align: left; font-size: 0.78rem; font-weight: 500;
+    color: var(--text2); border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 0.7rem 0.85rem; border-bottom: 1px solid var(--border);
+    vertical-align: top; color: var(--text);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--bg); }
+  .empty-state {
+    text-align: center; padding: 3rem; color: var(--text3); font-size: 0.9rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .edit-btn {
+    background: none; border: 1px solid var(--border2); border-radius: 6px;
+    padding: 0.3rem 0.5rem; cursor: pointer; color: var(--text2); font-size: 0.9rem;
+    transition: all 0.15s;
+  }
+  .edit-btn:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .del-btn {
+    background: none; border: 1px solid var(--border2); border-radius: 6px;
+    padding: 0.3rem 0.5rem; cursor: pointer; color: var(--text3); font-size: 0.9rem;
+    transition: all 0.15s; margin-left: 0.25rem;
+  }
+  .del-btn:hover { background: var(--danger-light); border-color: var(--danger); color: var(--danger); }
+  .mood-badge {
+    display: inline-block; padding: 0.18rem 0.6rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 500;
+  }
+  .mood-Bahagia { background: #e8f6e8; color: #2d6a2d; }
+  .mood-Nostalgia { background: #ede8f6; color: #4a3080; }
+  .mood-Spesial { background: var(--gold-light); color: var(--gold); }
+  .mood-Lucu { background: #fff0e0; color: #b06010; }
+  .mood-Sedih { background: var(--accent3-light); color: var(--accent3); }
+  .photo-link { color: var(--accent3); text-decoration: none; font-size: 0.78rem; }
+  .photo-link:hover { text-decoration: underline; }
+
+  /* ── MODAL EDIT ── */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+    display: none; align-items: center; justify-content: center; z-index: 500;
+  }
+  .modal-bg.open { display: flex; }
+  .modal-box {
+    background: var(--surface); border-radius: var(--radius);
+    padding: 1.75rem; width: 90%; max-width: 640px; max-height: 90vh;
+    overflow-y: auto; position: relative;
+  }
+  .modal-box h3 { font-size: 1.1rem; font-weight: 500; margin-bottom: 1.25rem; }
+
+  /* ── TIMELINE ── */
+  .timeline-intro {
+    background: var(--gold-light); border: 1px solid #e6d08a;
+    border-radius: var(--radius-sm); padding: 0.85rem 1.1rem;
+    font-size: 0.85rem; color: #7a5c10; margin-bottom: 1.5rem;
+  }
+  .timeline-wrap { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1rem; }
+  .timeline-item {
+    display: flex; gap: 1rem; position: relative;
+  }
+  .timeline-line {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .timeline-dot {
+    width: 14px; height: 14px; border-radius: 50%; background: var(--gold);
+    border: 2px solid var(--surface); box-shadow: 0 0 0 2px var(--gold);
+    flex-shrink: 0; margin-top: 4px;
+  }
+  .timeline-connector {
+    width: 2px; background: var(--border); flex: 1; margin-top: 4px;
+  }
+  .timeline-card {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 1rem 1.1rem;
+  }
+  .timeline-card .tc-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 0.4rem; gap: 0.5rem;
+  }
+  .timeline-card .tc-title { font-weight: 500; font-size: 0.92rem; }
+  .timeline-card .tc-date { font-size: 0.78rem; color: var(--text3); white-space: nowrap; }
+  .timeline-card .tc-story { font-size: 0.83rem; color: var(--text2); line-height: 1.55; }
+  .tc-type-badge {
+    display: inline-block; font-size: 0.7rem; padding: 0.15rem 0.55rem;
+    border-radius: 999px; font-weight: 500; margin-bottom: 0.4rem;
+  }
+  .type-Ulang-Tahun { background: var(--pink-light); color: var(--pink); }
+  .type-Anniversary { background: var(--gold-light); color: var(--gold); }
+  .type-Hari-Jadi { background: var(--accent-light); color: var(--accent); }
+  .type-Lainnya { background: var(--surface2); color: var(--text2); }
+  .timeline-actions { display: flex; gap: 0.4rem; }
+
+  /* ── FOTO ── */
+  .foto-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+  .foto-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .foto-card h4 { font-size: 1rem; font-weight: 500; }
+  .foto-card p { font-size: 0.82rem; color: var(--text2); }
+  .foto-card a {
+    display: inline-block; margin-top: 0.5rem; padding: 0.5rem 1rem;
+    background: var(--accent-light); color: var(--accent); border-radius: var(--radius-sm);
+    text-decoration: none; font-size: 0.83rem; font-weight: 500;
+  }
+  .how-steps { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.25rem; }
+  .step { display: flex; gap: 0.75rem; align-items: flex-start; }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff;
+    font-size: 0.75rem; font-weight: 500; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; margin-top: 1px;
+  }
+  .step p { font-size: 0.85rem; color: var(--text2); line-height: 1.55; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div style="text-align:center">
+    <div style="font-size:2.5rem; margin-bottom:0.5rem">📷</div>
+    <h1>Memory Archive</h1>
+    <p>Masuk untuk melanjutkan</p>
+  </div>
+  <div class="login-box">
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="Username" />
+    </div>
+    <div class="field">
+      <label>Kata Sandi</label>
+      <input type="password" id="loginPass" placeholder="Kata sandi" />
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Masuk</button>
+    <span class="error-msg" id="loginErr">Username atau kata sandi salah.</span>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <span class="logo">📷 Memory Archive</span>
+    <button class="btn-logout" onclick="doLogout()">Keluar</button>
+  </header>
+  <nav>
+    <button class="active" onclick="showTab('home',this)">🏠 Home</button>
+    <button onclick="showTab('tabel',this)">📋 Tabel Kenangan</button>
+    <button onclick="showTab('timeline',this)">🗓️ Timeline</button>
+    <button onclick="showTab('foto',this)">🖼️ Simpan Foto</button>
+  </nav>
+  <main>
+
+    <!-- HOME -->
+    <div class="tab-content active" id="tab-home">
+      <div class="hero">
+        <h1>Memory Dashboard</h1>
+        <p>"Every photo tells a story. Every story deserves to be remembered."</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Total Kenangan</div></div>
+        <div class="stat-card"><div class="num">8</div><div class="lbl">Kategori</div></div>
+        <div class="stat-card"><div class="num" id="statLatest">—</div><div class="lbl">Kenangan Terbaru</div></div>
+        <div class="stat-card"><div class="num">2024</div><div class="lbl">Sejak Tahun</div></div>
+      </div>
+      <p class="section-title">Quotes Kenangan</p>
+      <div class="quotes-wrap">
+        <div class="quote-card">"Memories stay forever, even when people don't." <span>— Life Archive</span></div>
+        <div class="quote-card">"Little moments, big memories. Treasure every one." <span>— Memory Book</span></div>
+        <div class="quote-card">"The best things in life aren't things — they're moments." <span>— Photo Story</span></div>
+      </div>
+      <p class="section-title">Kategori Sheet</p>
+      <div class="category-grid" id="catGrid"></div>
+    </div>
+
+    <!-- TABEL KENANGAN -->
+    <div class="tab-content" id="tab-tabel">
+      <div class="form-panel">
+        <h3 id="formTabelTitle">✨ Tambah Kenangan Baru</h3>
+        <input type="hidden" id="editTabelId" value="" />
+        <div class="form-grid">
+          <div class="field"><label>Tanggal</label><input type="date" id="t-tanggal" /></div>
+          <div class="field"><label>Nama</label><input type="text" id="t-nama" placeholder="Nama orang" /></div>
+          <div class="field"><label>Judul Kenangan</label><input type="text" id="t-judul" placeholder="Judul singkat" /></div>
+          <div class="field"><label>Lokasi</label><input type="text" id="t-lokasi" placeholder="Lokasi kenangan" /></div>
+          <div class="field"><label>Kategori</label>
+            <select id="t-kategori">
+              <option value="">Pilih Kategori</option>
+              <option>Keluarga</option><option>Sahabat</option><option>Pasangan</option>
+              <option>Teman Kerja</option><option>Perjalanan</option><option>Momen Spesial</option>
+              <option>Kenangan Sekolah</option><option>Random</option>
+            </select>
+          </div>
+          <div class="field"><label>Mood</label>
+            <select id="t-mood">
+              <option value="">Pilih Mood</option>
+              <option>Bahagia</option><option>Nostalgia</option><option>Spesial</option>
+              <option>Lucu</option><option>Sedih</option>
+            </select>
+          </div>
+          <div class="field"><label>Link Foto</label><input type="text" id="t-foto" placeholder="https://..." /></div>
+        </div>
+        <div class="field" style="margin-top:0.85rem"><label>Cerita</label>
+          <textarea id="t-cerita" rows="3" placeholder="Ceritakan kenangan ini..."></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn-save" onclick="saveTabel()">💾 Simpan Kenangan</button>
+          <button class="btn-cancel" id="btnCancelTabel" onclick="resetTabelForm()" style="display:none">Batal</button>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <select id="filterKat" onchange="renderTabel()">
+          <option value="">Semua Kategori</option>
+          <option>Keluarga</option><option>Sahabat</option><option>Pasangan</option>
+          <option>Teman Kerja</option><option>Perjalanan</option><option>Momen Spesial</option>
+          <option>Kenangan Sekolah</option><option>Random</option>
+        </select>
+        <select id="filterMood" onchange="renderTabel()">
+          <option value="">Semua Mood</option>
+          <option>Bahagia</option><option>Nostalgia</option><option>Spesial</option>
+          <option>Lucu</option><option>Sedih</option>
+        </select>
+        <input type="text" id="filterSearch" placeholder="🔍 Cari..." oninput="renderTabel()" style="flex:1;min-width:160px" />
+      </div>
+
+      <div class="table-wrap">
+        <table id="tabelKenangan">
+          <thead>
+            <tr>
+              <th style="width:46px"></th>
+              <th>Tanggal</th><th>Nama</th><th>Judul</th>
+              <th>Lokasi</th><th>Kategori</th><th>Mood</th>
+              <th>Cerita</th><th>Foto</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="tabelBody"></tbody>
+        </table>
+        <div class="empty-state" id="tabelEmpty">Belum ada kenangan. Tambahkan kenangan pertamamu!</div>
+      </div>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="tab-content" id="tab-timeline">
+      <div class="timeline-intro">
+        🗓️ <strong>Timeline Hari Penting</strong> — Khusus untuk memperingati momen-momen bersejarah: ulang tahun, anniversary, hari jadi, dan perayaan penting lainnya. Data ini terpisah dari Tabel Kenangan.
+      </div>
+
+      <div class="form-panel">
+        <h3 id="formTlTitle">🎉 Tambah Hari Penting</h3>
+        <input type="hidden" id="editTlId" value="" />
+        <div class="form-grid">
+          <div class="field"><label>Tanggal Peringatan</label><input type="date" id="tl-tanggal" /></div>
+          <div class="field"><label>Nama / Siapa</label><input type="text" id="tl-nama" placeholder="Contoh: Mama, Bersama Rara..." /></div>
+          <div class="field"><label>Jenis Peringatan</label>
+            <select id="tl-tipe">
+              <option value="">Pilih Jenis</option>
+              <option>Ulang Tahun</option><option>Anniversary</option>
+              <option>Hari Jadi</option><option>Lainnya</option>
+            </select>
+          </div>
+          <div class="field"><label>Judul</label><input type="text" id="tl-judul" placeholder="Judul peringatan" /></div>
+        </div>
+        <div class="field" style="margin-top:0.85rem"><label>Keterangan / Catatan</label>
+          <textarea id="tl-cerita" rows="3" placeholder="Catatan atau deskripsi singkat..."></textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn-save" onclick="saveTl()">💾 Simpan ke Timeline</button>
+          <button class="btn-cancel" id="btnCancelTl" onclick="resetTlForm()" style="display:none">Batal</button>
+        </div>
+      </div>
+
+      <div id="tlWrap">
+        <div class="empty-state" id="tlEmpty">Belum ada hari penting. Tambahkan peringatan pertamamu!</div>
+        <div class="timeline-wrap" id="tlList"></div>
+      </div>
+    </div>
+
+    <!-- SIMPAN FOTO -->
+    <div class="tab-content" id="tab-foto">
+      <p class="section-title">Simpan Foto Kenangan</p>
+      <div class="foto-cards">
+        <div class="foto-card">
+          <div style="font-size:2rem">☁️</div>
+          <h4>Google Drive</h4>
+          <p>Folder utama arsip foto kenangan — terorganisir per kategori dan tahun.</p>
+          <a href="https://drive.google.com" target="_blank">Buka Drive →</a>
+        </div>
+        <div class="foto-card">
+          <div style="font-size:2rem">🖼️</div>
+          <h4>Google Photos</h4>
+          <p>Backup otomatis foto dari smartphone dengan AI pengenalan wajah.</p>
+          <a href="https://photos.google.com" target="_blank">Buka Photos →</a>
+        </div>
+        <div class="foto-card">
+          <div style="font-size:2rem">👥</div>
+          <h4>Album Bersama</h4>
+          <p>Album kolaboratif bersama keluarga & sahabat — semua bisa tambahkan foto.</p>
+          <a href="https://photos.google.com/sharing" target="_blank">Buka Album →</a>
+        </div>
+      </div>
+      <p class="section-title" style="margin-top:2rem">Cara Penggunaan</p>
+      <div class="how-steps">
+        <div class="step"><div class="step-num">1</div><p><strong>Upload Foto</strong> — Unggah ke Google Drive / Photos, salin link "Anyone with link can view".</p></div>
+        <div class="step"><div class="step-num">2</div><p><strong>Tambah Kenangan</strong> — Buka tab "Tabel Kenangan", isi semua kolom termasuk kategori dan mood.</p></div>
+        <div class="step"><div class="step-num">3</div><p><strong>Tempel Link Foto</strong> — Paste link foto di kolom "Link Foto" saat menambahkan kenangan.</p></div>
+        <div class="step"><div class="step-num">4</div><p><strong>Filter & Cari</strong> — Gunakan filter Kategori, Mood, atau kolom pencarian untuk menemukan kenangan.</p></div>
+      </div>
+      <p style="text-align:center;color:var(--text3);margin-top:2rem;font-style:italic;font-size:0.88rem">"Moments fade, but memories live on — keep them close." 🤍</p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── AUTH ──
+const CREDS = { admin: '1234', memory: 'archive' };
+function doLogin(){
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  if(CREDS[u] && CREDS[u] === p){
+    sessionStorage.setItem('ma_auth','1');
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    refreshHome();
+  } else {
+    document.getElementById('loginErr').style.display='block';
+  }
+}
+function doLogout(){
+  sessionStorage.removeItem('ma_auth');
+  location.reload();
+}
+document.getElementById('loginPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+if(sessionStorage.getItem('ma_auth')){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+}
+
+// ── TABS ──
+function showTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='home') refreshHome();
+  if(id==='tabel') renderTabel();
+  if(id==='timeline') renderTl();
+}
+
+// ── STORAGE ──
+let tabelData = JSON.parse(localStorage.getItem('ma_tabel')||'[]');
+let tlData = JSON.parse(localStorage.getItem('ma_tl')||'[]');
+function saveTabelStorage(){ localStorage.setItem('ma_tabel', JSON.stringify(tabelData)); }
+function saveTlStorage(){ localStorage.setItem('ma_tl', JSON.stringify(tlData)); }
+
+// ── TABEL KENANGAN ──
+function saveTabel(){
+  const id = document.getElementById('editTabelId').value;
+  const row = {
+    id: id || Date.now().toString(),
+    tanggal: document.getElementById('t-tanggal').value,
+    nama: document.getElementById('t-nama').value.trim(),
+    judul: document.getElementById('t-judul').value.trim(),
+    lokasi: document.getElementById('t-lokasi').value.trim(),
+    kategori: document.getElementById('t-kategori').value,
+    mood: document.getElementById('t-mood').value,
+    foto: document.getElementById('t-foto').value.trim(),
+    cerita: document.getElementById('t-cerita').value.trim(),
+  };
+  if(!row.judul){ alert('Judul wajib diisi!'); return; }
+  if(id){
+    const idx = tabelData.findIndex(r=>r.id===id);
+    if(idx>-1) tabelData[idx]=row;
+  } else {
+    tabelData.unshift(row);
+  }
+  saveTabelStorage();
+  resetTabelForm();
+  renderTabel();
+  refreshHome();
+}
+function resetTabelForm(){
+  ['t-tanggal','t-nama','t-judul','t-lokasi','t-foto','t-cerita'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('t-kategori').value='';
+  document.getElementById('t-mood').value='';
+  document.getElementById('editTabelId').value='';
+  document.getElementById('formTabelTitle').textContent='✨ Tambah Kenangan Baru';
+  document.getElementById('btnCancelTabel').style.display='none';
+}
+function editTabel(id){
+  const row = tabelData.find(r=>r.id===id); if(!row) return;
+  document.getElementById('editTabelId').value=row.id;
+  document.getElementById('t-tanggal').value=row.tanggal||'';
+  document.getElementById('t-nama').value=row.nama||'';
+  document.getElementById('t-judul').value=row.judul||'';
+  document.getElementById('t-lokasi').value=row.lokasi||'';
+  document.getElementById('t-kategori').value=row.kategori||'';
+  document.getElementById('t-mood').value=row.mood||'';
+  document.getElementById('t-foto').value=row.foto||'';
+  document.getElementById('t-cerita').value=row.cerita||'';
+  document.getElementById('formTabelTitle').textContent='✏️ Edit Kenangan';
+  document.getElementById('btnCancelTabel').style.display='';
+  document.getElementById('tab-tabel').scrollIntoView({behavior:'smooth'});
+  document.getElementById('t-tanggal').focus();
+}
+function deleteTabel(id){
+  if(!confirm('Hapus kenangan ini?')) return;
+  tabelData = tabelData.filter(r=>r.id!==id);
+  saveTabelStorage();
+  renderTabel();
+  refreshHome();
+}
+function renderTabel(){
+  const kat = document.getElementById('filterKat').value;
+  const mood = document.getElementById('filterMood').value;
+  const q = (document.getElementById('filterSearch').value||'').toLowerCase();
+  let rows = tabelData.filter(r=>{
+    if(kat && r.kategori!==kat) return false;
+    if(mood && r.mood!==mood) return false;
+    if(q && !JSON.stringify(r).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const tbody = document.getElementById('tabelBody');
+  const empty = document.getElementById('tabelEmpty');
+  if(!rows.length){ tbody.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td>
+        <button class="edit-btn" onclick="editTabel('${r.id}')" title="Edit kenangan ini">✏️</button>
+      </td>
+      <td>${r.tanggal||'—'}</td>
+      <td>${r.nama||'—'}</td>
+      <td style="font-weight:500">${r.judul||'—'}</td>
+      <td>${r.lokasi||'—'}</td>
+      <td>${r.kategori||'—'}</td>
+      <td>${r.mood?`<span class="mood-badge mood-${r.mood}">${r.mood}</span>`:'—'}</td>
+      <td style="max-width:200px;white-space:normal;font-size:0.78rem;color:var(--text2)">${r.cerita||'—'}</td>
+      <td>${r.foto?`<a class="photo-link" href="${r.foto}" target="_blank">🔗 Lihat</a>`:'—'}</td>
+      <td><button class="del-btn" onclick="deleteTabel('${r.id}')" title="Hapus">🗑️</button></td>
+    </tr>
+  `).join('');
+}
+
+// ── TIMELINE ──
+function saveTl(){
+  const id = document.getElementById('editTlId').value;
+  const row = {
+    id: id || Date.now().toString(),
+    tanggal: document.getElementById('tl-tanggal').value,
+    nama: document.getElementById('tl-nama').value.trim(),
+    tipe: document.getElementById('tl-tipe').value,
+    judul: document.getElementById('tl-judul').value.trim(),
+    cerita: document.getElementById('tl-cerita').value.trim(),
+  };
+  if(!row.judul){ alert('Judul wajib diisi!'); return; }
+  if(id){
+    const idx = tlData.findIndex(r=>r.id===id);
+    if(idx>-1) tlData[idx]=row;
+  } else {
+    tlData.unshift(row);
+  }
+  tlData.sort((a,b)=>{
+    if(!a.tanggal) return 1; if(!b.tanggal) return -1;
+    return new Date(b.tanggal)-new Date(a.tanggal);
+  });
+  saveTlStorage();
+  resetTlForm();
+  renderTl();
+}
+function resetTlForm(){
+  ['tl-tanggal','tl-nama','tl-judul','tl-cerita'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('tl-tipe').value='';
+  document.getElementById('editTlId').value='';
+  document.getElementById('formTlTitle').textContent='🎉 Tambah Hari Penting';
+  document.getElementById('btnCancelTl').style.display='none';
+}
+function editTl(id){
+  const row = tlData.find(r=>r.id===id); if(!row) return;
+  document.getElementById('editTlId').value=row.id;
+  document.getElementById('tl-tanggal').value=row.tanggal||'';
+  document.getElementById('tl-nama').value=row.nama||'';
+  document.getElementById('tl-tipe').value=row.tipe||'';
+  document.getElementById('tl-judul').value=row.judul||'';
+  document.getElementById('tl-cerita').value=row.cerita||'';
+  document.getElementById('formTlTitle').textContent='✏️ Edit Hari Penting';
+  document.getElementById('btnCancelTl').style.display='';
+  document.getElementById('tab-timeline').scrollIntoView({behavior:'smooth'});
+}
+function deleteTl(id){
+  if(!confirm('Hapus peringatan ini?')) return;
+  tlData = tlData.filter(r=>r.id!==id);
+  saveTlStorage();
+  renderTl();
+}
+function formatTanggal(tgl){
+  if(!tgl) return '—';
+  const d = new Date(tgl+'T00:00:00');
+  return d.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+}
+function renderTl(){
+  const list = document.getElementById('tlList');
+  const empty = document.getElementById('tlEmpty');
+  if(!tlData.length){ list.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+  list.innerHTML = tlData.map((r,i)=>`
+    <div class="timeline-item">
+      <div class="timeline-line">
+        <div class="timeline-dot"></div>
+        ${i<tlData.length-1?'<div class="timeline-connector"></div>':''}
+      </div>
+      <div class="timeline-card">
+        <div class="tc-header">
+          <div>
+            ${r.tipe?`<span class="tc-type-badge type-${r.tipe.replace(/ /g,'-')}">${r.tipe}</span><br/>`:''}
+            <span class="tc-title">${r.judul||'—'}</span>
+            ${r.nama?`<span style="font-size:0.78rem;color:var(--text3);margin-left:0.5rem">· ${r.nama}</span>`:''}
+          </div>
+          <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0">
+            <span class="tc-date">${formatTanggal(r.tanggal)}</span>
+            <button class="edit-btn" onclick="editTl('${r.id}')" title="Edit">✏️</button>
+            <button class="del-btn" onclick="deleteTl('${r.id}')" title="Hapus">🗑️</button>
+          </div>
+        </div>
+        ${r.cerita?`<div class="tc-story">${r.cerita}</div>`:''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── HOME ──
+const CATS = ['Keluarga','Sahabat','Pasangan','Teman Kerja','Perjalanan','Momen Spesial','Kenangan Sekolah','Random'];
+function refreshHome(){
+  document.getElementById('statTotal').textContent = tabelData.length;
+  document.getElementById('statLatest').textContent = tabelData[0]?.judul?.substring(0,12)||'—';
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = CATS.map(c=>{
+    const n = tabelData.filter(r=>r.kategori===c).length;
+    return `<div class="cat-card"><span class="cat-name">${c}</span><span class="cat-count">${n} kenangan</span></div>`;
+  }).join('');
+}
+
+// ── INIT ──
+if(sessionStorage.getItem('ma_auth')){ refreshHome(); renderTabel(); renderTl(); }
+</script>
+</body>
+</html>
